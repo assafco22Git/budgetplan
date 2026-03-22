@@ -82,14 +82,14 @@ export default function App() {
 
   // Subscribe to the active budget via onSnapshot
   useEffect(() => {
-    if (!activeBudgetId) return;
-    const unsub = subscribeToBudget(activeBudgetId, (updated) => {
+    if (!activeBudgetId || !user?.uid) return;
+    const unsub = subscribeToBudget(user.uid, activeBudgetId, (updated) => {
       setBudgets((prev) =>
         prev.map((b) => (b.id === updated.id ? updated : b))
       );
     });
     return unsub;
-  }, [activeBudgetId]);
+  }, [activeBudgetId, user?.uid]);
 
   // Edit lock acquisition / release
   useEffect(() => {
@@ -97,13 +97,13 @@ export default function App() {
     if (page !== 'Plan' && page !== 'Follow-Up') return;
 
     let released = false;
-    acquireEditLock(activeBudgetId, user.uid, user.displayName || user.email).then((result) => {
+    acquireEditLock(user.uid, activeBudgetId, user.uid, user.displayName || user.email).then((result) => {
       if (!released) setLockResult(result);
     });
 
     return () => {
       released = true;
-      releaseEditLock(activeBudgetId, user.uid);
+      releaseEditLock(user.uid, activeBudgetId, user.uid);
       setLockResult(null);
     };
   }, [page, activeBudgetId, user?.uid]);
@@ -146,19 +146,19 @@ export default function App() {
   }
 
   async function handleSaveBudget(newBudgetData) {
-    if (!activeBudgetId) return;
+    if (!activeBudgetId || !user) return;
     setBudgets((prev) =>
       prev.map((b) => b.id === activeBudgetId ? { ...b, budgetData: newBudgetData } : b)
     );
-    await updateBudgetData(activeBudgetId, newBudgetData);
+    await updateBudgetData(user.uid, activeBudgetId, newBudgetData);
   }
 
   async function handleSaveExpenses(newExpenses) {
-    if (!activeBudgetId) return;
+    if (!activeBudgetId || !user) return;
     setBudgets((prev) =>
       prev.map((b) => b.id === activeBudgetId ? { ...b, expenses: newExpenses } : b)
     );
-    await updateBudgetExpenses(activeBudgetId, newExpenses);
+    await updateBudgetExpenses(user.uid, activeBudgetId, newExpenses);
   }
 
   async function handleCreateBudget(name) {
@@ -191,36 +191,31 @@ export default function App() {
 
   async function handleInvitePartner(email) {
     if (!activeBudgetId || !user) return;
-    await inviteUserToBudget(
-      activeBudgetId,
-      user.uid,
-      user.displayName || user.email,
-      email,
-    );
+    await inviteUserToBudget(user.uid, activeBudgetId, user.displayName || user.email, email);
   }
 
   async function handleCancelInvite(email) {
-    if (!activeBudgetId) return;
-    await cancelInvite(activeBudgetId, email);
+    if (!activeBudgetId || !user) return;
+    await cancelInvite(user.uid, activeBudgetId, email);
   }
 
   async function handleRemovePartner(targetUid) {
-    if (!activeBudgetId) return;
-    await removePartnerFromBudget(activeBudgetId, targetUid);
+    if (!activeBudgetId || !user) return;
+    await removePartnerFromBudget(user.uid, activeBudgetId, targetUid);
   }
 
   async function handleRenameBudget(name) {
-    if (!activeBudgetId) return;
+    if (!activeBudgetId || !user) return;
     setBudgets((prev) =>
       prev.map((b) => b.id === activeBudgetId ? { ...b, name } : b)
     );
-    await renameBudget(activeBudgetId, name);
+    await renameBudget(user.uid, activeBudgetId, name);
   }
 
   async function handleDeleteBudget() {
     if (!activeBudgetId || !user) return;
     const remaining = budgets.filter((b) => b.id !== activeBudgetId);
-    await deleteBudget(activeBudgetId, user.uid);
+    await deleteBudget(user.uid, activeBudgetId);
     setBudgets(remaining);
     setActiveBudgetId(remaining[0]?.id || null);
   }
