@@ -361,6 +361,65 @@ body { margin: 0; }
 .btn--sm { padding: 5px 12px; font-size: 13px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ── Planning card list ── */
+.plan-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plan-cat-card {
+  padding: 16px;
+}
+
+.plan-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.plan-cat-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-cat-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.plan-cat-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 4px;
+}
+
+.cat-amount-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  width: fit-content;
+  min-width: 120px;
+  transition: border-color 0.15s;
+}
+.cat-amount-wrap:focus-within { border-color: var(--accent); }
+
 /* ── Planning specific ── */
 .planning-month {
   display: flex;
@@ -699,4 +758,6 @@ body { margin: 0; }
     gap: 2px;
   }
   .num-remaining { margin-left: 0; }
+
+  .plan-cat-card { padding: 14px; }
 }

@@ -1,198 +1,182 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { DEFAULT_CATEGORIES } from '../store';
 
-export default function Planning({ budget: initialBudget, onSaveBudget, currency }) {
-  const [budget, setBudget] = useState(initialBudget);
-  const [newCategory, setNewCategory] = useState('');
-  const [month, setMonth] = useState(() => {
-    if (initialBudget._month) return initialBudget._month;
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved,  setSaved]  = useState(false);
+const SLIDER_MAX = 10000;
+const SLIDER_STEP = 50;
 
-  // Editing a category name inline
-  const [editingCat,  setEditingCat]  = useState(null);
-  const [editCatValue, setEditCatValue] = useState('');
+const META_KEYS = new Set(['_removedCategories', '_month']);
 
-  const newCatInputRef = useRef(null);
-
-  // Only sync when initialBudget changes identity due to a Firestore reload
-  // (not on every parent re-render — that's what caused the second-add bug)
-  const prevInitialRef = useRef(initialBudget);
-  useEffect(() => {
-    if (prevInitialRef.current !== initialBudget) {
-      prevInitialRef.current = initialBudget;
-      setBudget(initialBudget);
-      if (initialBudget._month) setMonth(initialBudget._month);
-    }
-  });
-
+function getCategories(budget) {
   const removed = budget._removedCategories || [];
-
-  const categories = Array.from(new Set([
+  return Array.from(new Set([
     ...DEFAULT_CATEGORIES.filter((c) => !removed.includes(c)),
-    ...Object.keys(budget).filter(
-      (k) => !['_month', '_removedCategories'].includes(k) && !DEFAULT_CATEGORIES.includes(k)
-    ),
+    ...Object.keys(budget).filter((k) => !META_KEYS.has(k) && !DEFAULT_CATEGORIES.includes(k)),
   ]));
+}
 
-  function handleAmountChange(cat, value) {
-    setBudget((prev) => ({ ...prev, [cat]: value }));
+export default function Planning({ budget: initialBudget, onSaveBudget, currency }) {
+  // Local editable copy — no useEffect sync, initialised once on mount
+  const [budget,      setBudget]      = useState(() => ({ ...initialBudget }));
+  const [newCategory, setNewCategory] = useState('');
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [editingCat,  setEditingCat]  = useState(null);
+  const [editCatVal,  setEditCatVal]  = useState('');
+
+  const newCatRef = useRef(null);
+  const categories = getCategories(budget);
+
+  // ── Amount ────────────────────────────────────────────────────────────────
+  function setAmount(cat, value) {
+    const num = Math.max(0, Number(value) || 0);
+    setBudget((prev) => ({ ...prev, [cat]: num }));
     setSaved(false);
   }
 
-  function handleAddCategory() {
-    const trimmed = newCategory.trim();
-    if (!trimmed || categories.includes(trimmed)) return;
-    setBudget((prev) => ({ ...prev, [trimmed]: '' }));
+  // ── Add category ──────────────────────────────────────────────────────────
+  function addCategory() {
+    const name = newCategory.trim();
+    if (!name) return;
+    // re-derive freshly to avoid stale closure
+    const current = getCategories(budget);
+    if (current.includes(name)) return;
+    setBudget((prev) => ({ ...prev, [name]: 0 }));
     setNewCategory('');
     setSaved(false);
-    // Keep focus in the input so the user can type the next category immediately
-    setTimeout(() => newCatInputRef.current?.focus(), 0);
+    setTimeout(() => newCatRef.current?.focus(), 0);
   }
 
-  function handleRemoveCategory(cat) {
-    setSaved(false);
+  // ── Remove category ───────────────────────────────────────────────────────
+  function removeCategory(cat) {
     if (DEFAULT_CATEGORIES.includes(cat)) {
       setBudget((prev) => ({
         ...prev,
         _removedCategories: [...(prev._removedCategories || []), cat],
       }));
     } else {
-      setBudget((prev) => {
-        const next = { ...prev };
-        delete next[cat];
-        return next;
-      });
+      setBudget((prev) => { const n = { ...prev }; delete n[cat]; return n; });
     }
+    setSaved(false);
   }
 
-  function startEditCat(cat) {
-    setEditingCat(cat);
-    setEditCatValue(cat);
-  }
+  // ── Rename category ───────────────────────────────────────────────────────
+  function startRename(cat) { setEditingCat(cat); setEditCatVal(cat); }
 
-  function confirmEditCat(oldName) {
-    const newName = editCatValue.trim();
+  function confirmRename(oldName) {
+    const newName = editCatVal.trim();
     setEditingCat(null);
     if (!newName || newName === oldName) return;
-    if (categories.some((c) => c !== oldName && c === newName)) return; // duplicate
-
-    const currentValue = budget[oldName] ?? '';
+    if (getCategories(budget).some((c) => c !== oldName && c === newName)) return;
+    const val = budget[oldName] ?? 0;
     setBudget((prev) => {
-      const next = { ...prev };
+      const n = { ...prev };
       if (DEFAULT_CATEGORIES.includes(oldName)) {
-        next._removedCategories = [...(prev._removedCategories || []), oldName];
+        n._removedCategories = [...(prev._removedCategories || []), oldName];
       } else {
-        delete next[oldName];
+        delete n[oldName];
       }
-      next[newName] = currentValue;
-      return next;
+      n[newName] = val;
+      return n;
     });
     setSaved(false);
   }
 
-  async function handleSave() {
+  // ── Save ──────────────────────────────────────────────────────────────────
+  async function save() {
     setSaving(true);
-    await onSaveBudget({ ...budget, _month: month });
+    // strip _month — budget is now recurring (no month attached)
+    const toSave = { ...budget };
+    delete toSave._month;
+    await onSaveBudget(toSave);
     setSaving(false);
     setSaved(true);
   }
 
-  const total = categories.reduce((sum, cat) => sum + (Number(budget[cat]) || 0), 0);
+  const total = categories.reduce((s, c) => s + (Number(budget[c]) || 0), 0);
+  const sym = currency.symbol;
 
   return (
     <div className="page planning">
       <div className="page-header">
-        <h2>Monthly Budget Plan</h2>
-        <p className="page-subtitle">Set your spending targets for each category.</p>
+        <h2>Monthly Budget</h2>
+        <p className="page-subtitle">Set once — applied every month automatically.</p>
       </div>
 
-      <div className="planning-month">
-        <label htmlFor="month-input">Planning Month</label>
-        <input
-          id="month-input"
-          type="month"
-          value={month}
-          onChange={(e) => { setMonth(e.target.value); setSaved(false); }}
-          className="month-input"
-        />
-      </div>
+      <div className="plan-category-list">
+        {categories.map((cat) => {
+          const val = Number(budget[cat]) || 0;
+          return (
+            <div key={cat} className="plan-cat-card card">
+              <div className="plan-cat-header">
+                {editingCat === cat ? (
+                  <input
+                    className="cat-edit-input"
+                    value={editCatVal}
+                    autoFocus
+                    onChange={(e) => setEditCatVal(e.target.value)}
+                    onBlur={() => confirmRename(cat)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter')  confirmRename(cat);
+                      if (e.key === 'Escape') setEditingCat(null);
+                    }}
+                  />
+                ) : (
+                  <span className="plan-cat-name">{cat}</span>
+                )}
+                <div className="plan-cat-actions">
+                  <button className="edit-cat-btn" onClick={() => startRename(cat)} title="Rename">✎</button>
+                  <button className="remove-btn"   onClick={() => removeCategory(cat)} title="Remove">✕</button>
+                </div>
+              </div>
 
-      <div className="category-list">
-        {categories.map((cat) => (
-          <div key={cat} className="category-row">
-            {editingCat === cat ? (
-              <input
-                className="cat-edit-input"
-                value={editCatValue}
-                autoFocus
-                onChange={(e) => setEditCatValue(e.target.value)}
-                onBlur={() => confirmEditCat(cat)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter')  confirmEditCat(cat);
-                  if (e.key === 'Escape') setEditingCat(null);
-                }}
-              />
-            ) : (
-              <span className="category-name">{cat}</span>
-            )}
-
-            <button
-              className="edit-cat-btn"
-              onClick={() => startEditCat(cat)}
-              title="Edit name"
-            >
-              ✎
-            </button>
-
-            <div className="category-input-wrap">
-              <span className="currency-symbol">{currency.symbol}</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={budget[cat] ?? ''}
-                onChange={(e) => handleAmountChange(cat, e.target.value)}
-                className="amount-input"
-              />
+              <div className="plan-cat-controls">
+                <input
+                  type="range"
+                  min="0"
+                  max={SLIDER_MAX}
+                  step={SLIDER_STEP}
+                  value={Math.min(val, SLIDER_MAX)}
+                  onChange={(e) => setAmount(cat, e.target.value)}
+                  className="cat-slider"
+                />
+                <div className="cat-amount-wrap">
+                  <span className="currency-symbol">{sym}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step={SLIDER_STEP}
+                    value={val === 0 ? '' : val}
+                    placeholder="0"
+                    onChange={(e) => setAmount(cat, e.target.value)}
+                    className="amount-input"
+                  />
+                </div>
+              </div>
             </div>
-            <button
-              className="remove-btn"
-              onClick={() => handleRemoveCategory(cat)}
-              title="Remove category"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="add-category">
         <input
-          ref={newCatInputRef}
+          ref={newCatRef}
           type="text"
-          placeholder="New category name..."
+          placeholder="New category name…"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+          onKeyDown={(e) => e.key === 'Enter' && addCategory()}
           className="new-cat-input"
         />
-        <button className="btn btn--secondary" onClick={handleAddCategory}>
-          + Add
-        </button>
+        <button className="btn btn--secondary" onClick={addCategory}>+ Add</button>
       </div>
 
       <div className="planning-footer">
         <div className="total-bar">
-          <span>Total Budget</span>
-          <span className="total-amount">{currency.symbol}{total.toLocaleString()}</span>
+          <span>Total / month</span>
+          <span className="total-amount">{sym}{total.toLocaleString()}</span>
         </div>
-        <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save Plan'}
+        <button className="btn btn--primary" onClick={save} disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
         </button>
         {saved && <span className="saved-msg">Saved!</span>}
       </div>
