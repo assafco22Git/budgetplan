@@ -1,34 +1,7 @@
-// localStorage-backed store for budget data
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
-const BUDGET_KEY = 'budget_plan';
-const EXPENSES_KEY = 'budget_expenses';
-const CURRENCY_KEY = 'budget_currency';
-
-export const CURRENCIES = [
-  { code: 'USD', symbol: '$',  label: 'USD — US Dollar' },
-  { code: 'EUR', symbol: '€',  label: 'EUR — Euro' },
-  { code: 'GBP', symbol: '£',  label: 'GBP — British Pound' },
-  { code: 'ILS', symbol: '₪',  label: 'ILS — Israeli Shekel' },
-  { code: 'JPY', symbol: '¥',  label: 'JPY — Japanese Yen' },
-];
-
-export function getCurrency() {
-  return localStorage.getItem(CURRENCY_KEY) || 'USD';
-}
-
-export function saveCurrency(code) {
-  localStorage.setItem(CURRENCY_KEY, code);
-}
-
-const THEME_KEY = 'budget_theme';
-
-export function getTheme() {
-  return localStorage.getItem(THEME_KEY) || 'dark';
-}
-
-export function saveTheme(theme) {
-  localStorage.setItem(THEME_KEY, theme);
-}
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 export const DEFAULT_CATEGORIES = [
   'Housing',
@@ -41,31 +14,55 @@ export const DEFAULT_CATEGORIES = [
   'Other',
 ];
 
-export function getBudget() {
-  try {
-    const raw = localStorage.getItem(BUDGET_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+export const CURRENCIES = [
+  { code: 'USD', symbol: '$',  label: 'USD — US Dollar' },
+  { code: 'EUR', symbol: '€',  label: 'EUR — Euro' },
+  { code: 'GBP', symbol: '£',  label: 'GBP — British Pound' },
+  { code: 'ILS', symbol: '₪',  label: 'ILS — Israeli Shekel' },
+  { code: 'JPY', symbol: '¥',  label: 'JPY — Japanese Yen' },
+];
+
+// ── Device preferences (localStorage — per device) ───────────────────────────
+
+const CURRENCY_KEY = 'budget_currency';
+const THEME_KEY    = 'budget_theme';
+
+export function getCurrency() {
+  return localStorage.getItem(CURRENCY_KEY) || 'USD';
+}
+export function saveCurrency(code) {
+  localStorage.setItem(CURRENCY_KEY, code);
 }
 
-export function saveBudget(budget) {
-  localStorage.setItem(BUDGET_KEY, JSON.stringify(budget));
+export function getTheme() {
+  return localStorage.getItem(THEME_KEY) || 'dark';
+}
+export function saveTheme(theme) {
+  localStorage.setItem(THEME_KEY, theme);
 }
 
-export function getExpenses() {
-  try {
-    const raw = localStorage.getItem(EXPENSES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+// ── Firestore — user data ─────────────────────────────────────────────────────
+
+export async function loadUserData(uid) {
+  const [budgetSnap, expensesSnap] = await Promise.all([
+    getDoc(doc(db, 'users', uid, 'data', 'budget')),
+    getDoc(doc(db, 'users', uid, 'data', 'expenses')),
+  ]);
+  return {
+    budget:   budgetSnap.exists()   ? budgetSnap.data()              : {},
+    expenses: expensesSnap.exists() ? (expensesSnap.data().entries ?? []) : [],
+  };
 }
 
-export function saveExpenses(expenses) {
-  localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+export async function saveUserBudget(uid, budget) {
+  await setDoc(doc(db, 'users', uid, 'data', 'budget'), budget);
 }
+
+export async function saveUserExpenses(uid, expenses) {
+  await setDoc(doc(db, 'users', uid, 'data', 'expenses'), { entries: expenses });
+}
+
+// ── Pure utility ──────────────────────────────────────────────────────────────
 
 // Returns { category: totalSpent }
 export function getTotalSpentByCategory(expenses) {

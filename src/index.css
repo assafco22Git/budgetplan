@@ -494,6 +494,116 @@ body { margin: 0; }
 .empty-icon { font-size: 48px; }
 .empty-state p { font-size: 15px; color: var(--text-muted); }
 
+/* ── Splash / Loading ── */
+.splash-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--bg);
+}
+.splash-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--title-color);
+  letter-spacing: -0.5px;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Login screen ── */
+.login-screen {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+.login-card {
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 32px;
+  text-align: center;
+}
+.login-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--title-color);
+  letter-spacing: -0.5px;
+}
+.login-desc {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.btn--google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  padding: 11px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+  font-family: var(--sans);
+  width: 100%;
+}
+.btn--google:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+.login-error {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+/* ── User avatar / sign-out ── */
+.user-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: block;
+}
+.user-initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Mobile ── */
 @media (max-width: 480px) {
   .app-header {

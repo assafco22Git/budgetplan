@@ -1,49 +1,38 @@
-import { useState, useEffect } from 'react';
-import { getBudget, getExpenses, saveExpenses, DEFAULT_CATEGORIES } from '../store';
+import { useState } from 'react';
+import { DEFAULT_CATEGORIES } from '../store';
 
 function getWeekLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function FollowUp({ currency }) {
-  const [budget, setBudget] = useState({});
-  const [expenses, setExpenses] = useState([]);
+export default function FollowUp({ budget, expenses, onSaveExpenses, currency }) {
   const [weekDate, setWeekDate] = useState(() => {
     const now = new Date();
-    const day = now.getDay();
     const sunday = new Date(now);
-    sunday.setDate(now.getDate() - day);
+    sunday.setDate(now.getDate() - now.getDay());
     return sunday.toISOString().slice(0, 10);
   });
-  const [amounts, setAmounts] = useState({});
+  const [amounts,   setAmounts]   = useState({});
   const [editingId, setEditingId] = useState(null);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setBudget(getBudget());
-    setExpenses(getExpenses());
-  }, []);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
 
   const removed = budget._removedCategories || [];
-
-  const categories = Array.from(
-    new Set([
-      ...DEFAULT_CATEGORIES.filter((c) => !removed.includes(c)),
-      ...Object.keys(budget).filter(
-        (k) => !['_month', '_removedCategories'].includes(k) && !DEFAULT_CATEGORIES.includes(k)
-      ),
-    ])
-  );
+  const categories = Array.from(new Set([
+    ...DEFAULT_CATEGORIES.filter((c) => !removed.includes(c)),
+    ...Object.keys(budget).filter(
+      (k) => !['_month', '_removedCategories'].includes(k) && !DEFAULT_CATEGORIES.includes(k)
+    ),
+  ]));
 
   function handleAmountChange(cat, value) {
     setAmounts((prev) => ({ ...prev, [cat]: value }));
     setSaved(false);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!weekDate) return;
-
     const entry = {
       id: editingId || Date.now().toString(),
       weekOf: weekDate,
@@ -51,7 +40,6 @@ export default function FollowUp({ currency }) {
         Object.entries(amounts).map(([k, v]) => [k, Number(v) || 0])
       ),
     };
-
     let updated;
     if (editingId) {
       updated = expenses.map((e) => (e.id === editingId ? entry : e));
@@ -59,10 +47,10 @@ export default function FollowUp({ currency }) {
     } else {
       updated = [...expenses, entry];
     }
-
     updated.sort((a, b) => a.weekOf.localeCompare(b.weekOf));
-    setExpenses(updated);
-    saveExpenses(updated);
+    setSaving(true);
+    await onSaveExpenses(updated);
+    setSaving(false);
     setAmounts({});
     setSaved(true);
   }
@@ -79,10 +67,9 @@ export default function FollowUp({ currency }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
     const updated = expenses.filter((e) => e.id !== id);
-    setExpenses(updated);
-    saveExpenses(updated);
+    await onSaveExpenses(updated);
   }
 
   function handleCancelEdit() {
@@ -136,16 +123,16 @@ export default function FollowUp({ currency }) {
         <div className="followup-footer">
           <div className="total-bar">
             <span>Week Total</span>
-            <span className="total-amount">{sym}{entryTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="total-amount">
+              {sym}{entryTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
           <div className="btn-row">
-            <button className="btn btn--primary" onClick={handleSubmit}>
-              {editingId ? 'Update Entry' : 'Save Entry'}
+            <button className="btn btn--primary" onClick={handleSubmit} disabled={saving}>
+              {saving ? 'Saving…' : editingId ? 'Update Entry' : 'Save Entry'}
             </button>
             {editingId && (
-              <button className="btn btn--ghost" onClick={handleCancelEdit}>
-                Cancel
-              </button>
+              <button className="btn btn--ghost" onClick={handleCancelEdit}>Cancel</button>
             )}
           </div>
           {saved && <span className="saved-msg">Entry saved!</span>}
@@ -162,7 +149,9 @@ export default function FollowUp({ currency }) {
                 <div key={entry.id} className="history-card card">
                   <div className="history-card-header">
                     <span className="history-date">Week of {getWeekLabel(entry.weekOf)}</span>
-                    <span className="history-total">{sym}{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="history-total">
+                      {sym}{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
                   <div className="history-amounts">
                     {Object.entries(entry.amounts)

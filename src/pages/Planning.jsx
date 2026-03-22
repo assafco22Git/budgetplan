@@ -1,29 +1,31 @@
 import { useState, useEffect } from 'react';
-import { getBudget, saveBudget, DEFAULT_CATEGORIES } from '../store';
+import { DEFAULT_CATEGORIES } from '../store';
 
-export default function Planning({ currency }) {
-  const [budget, setBudget] = useState({});
+export default function Planning({ budget: initialBudget, onSaveBudget, currency }) {
+  const [budget, setBudget] = useState(initialBudget);
   const [newCategory, setNewCategory] = useState('');
   const [month, setMonth] = useState(() => {
+    if (initialBudget._month) return initialBudget._month;
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
 
+  // Sync if parent reloads budget (e.g. after sign-in)
   useEffect(() => {
-    setBudget(getBudget());
-  }, []);
+    setBudget(initialBudget);
+    if (initialBudget._month) setMonth(initialBudget._month);
+  }, [initialBudget]);
 
   const removed = budget._removedCategories || [];
 
-  const categories = Array.from(
-    new Set([
-      ...DEFAULT_CATEGORIES.filter((c) => !removed.includes(c)),
-      ...Object.keys(budget).filter(
-        (k) => !['_month', '_removedCategories'].includes(k) && !DEFAULT_CATEGORIES.includes(k)
-      ),
-    ])
-  );
+  const categories = Array.from(new Set([
+    ...DEFAULT_CATEGORIES.filter((c) => !removed.includes(c)),
+    ...Object.keys(budget).filter(
+      (k) => !['_month', '_removedCategories'].includes(k) && !DEFAULT_CATEGORIES.includes(k)
+    ),
+  ]));
 
   function handleAmountChange(cat, value) {
     setBudget((prev) => ({ ...prev, [cat]: value }));
@@ -41,13 +43,11 @@ export default function Planning({ currency }) {
   function handleRemoveCategory(cat) {
     setSaved(false);
     if (DEFAULT_CATEGORIES.includes(cat)) {
-      // Mark default category as removed
       setBudget((prev) => ({
         ...prev,
         _removedCategories: [...(prev._removedCategories || []), cat],
       }));
     } else {
-      // Delete custom category entirely
       setBudget((prev) => {
         const next = { ...prev };
         delete next[cat];
@@ -56,8 +56,10 @@ export default function Planning({ currency }) {
     }
   }
 
-  function handleSave() {
-    saveBudget({ ...budget, _month: month });
+  async function handleSave() {
+    setSaving(true);
+    await onSaveBudget({ ...budget, _month: month });
+    setSaving(false);
     setSaved(true);
   }
 
@@ -127,8 +129,8 @@ export default function Planning({ currency }) {
           <span>Total Budget</span>
           <span className="total-amount">{currency.symbol}{total.toLocaleString()}</span>
         </div>
-        <button className="btn btn--primary" onClick={handleSave}>
-          Save Plan
+        <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save Plan'}
         </button>
         {saved && <span className="saved-msg">Saved!</span>}
       </div>
