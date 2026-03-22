@@ -1,8 +1,6 @@
 import { useState, useRef } from 'react';
 import { DEFAULT_CATEGORIES } from '../store';
 
-const SLIDER_MAX = 10000;
-const SLIDER_STEP = 50;
 
 const META_KEYS = new Set(['_removedCategories', '_month']);
 
@@ -127,28 +125,17 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
                 </div>
               </div>
 
-              <div className="plan-cat-controls">
+              <div className="cat-amount-wrap">
+                <span className="currency-symbol">{sym}</span>
                 <input
-                  type="range"
+                  type="number"
                   min="0"
-                  max={SLIDER_MAX}
-                  step={SLIDER_STEP}
-                  value={Math.min(val, SLIDER_MAX)}
+                  step={50}
+                  value={val === 0 ? '' : val}
+                  placeholder="0"
                   onChange={(e) => setAmount(cat, e.target.value)}
-                  className="cat-slider"
+                  className="amount-input"
                 />
-                <div className="cat-amount-wrap">
-                  <span className="currency-symbol">{sym}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step={SLIDER_STEP}
-                    value={val === 0 ? '' : val}
-                    placeholder="0"
-                    onChange={(e) => setAmount(cat, e.target.value)}
-                    className="amount-input"
-                  />
-                </div>
               </div>
             </div>
           );

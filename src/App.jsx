@@ -108,21 +108,17 @@ export default function App() {
     };
   }, [page, activeBudgetId, user?.uid]);
 
-  // Sliding nav pill — use rAF to ensure layout is ready before measuring
+  // Sliding nav pill
   useEffect(() => {
     let raf;
     const measure = () => {
       const btn = btnRefs.current[page];
-      const nav = navRef.current;
-      if (!btn || !nav) return;
-      const navRect = nav.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      if (btnRect.width === 0) { raf = requestAnimationFrame(measure); return; }
+      if (!btn || btn.offsetWidth === 0) { raf = requestAnimationFrame(measure); return; }
       setSliderStyle({
-        left:   btnRect.left - navRect.left,
-        width:  btnRect.width,
-        height: btnRect.height,
-        top:    btnRect.top  - navRect.top,
+        left:   btn.offsetLeft,
+        top:    btn.offsetTop,
+        width:  btn.offsetWidth,
+        height: btn.offsetHeight,
       });
     };
     raf = requestAnimationFrame(measure);
