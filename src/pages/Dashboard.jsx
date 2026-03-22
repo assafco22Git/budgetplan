@@ -97,11 +97,6 @@ export default function Dashboard({
     setInviteError('');
     try {
       await onInvitePartner(email);
-      const budgetName = activeBudget?.name || 'our budget';
-      window.open(
-        `mailto:${email}?subject=You've been invited to ${budgetName} on BudgetPlan&body=Hi! You've been invited to join "${budgetName}" on BudgetPlan. Sign in at the app to accept.`,
-        '_blank',
-      );
       setInviteEmail('');
       setShowInviteModal(false);
     } catch (err) {
