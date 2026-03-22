@@ -140,7 +140,7 @@ export default function Dashboard({
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn--secondary btn--sm" onClick={() => { setNewBudgetName(''); setShowNewModal(true); }}>
+          <button className="btn btn--secondary btn--sm" onClick={() => { setNewBudgetName('My Budget'); setCreateError(''); setShowNewModal(true); }}>
             + New Budget
           </button>
           {isOwner && (
