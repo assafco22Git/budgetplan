@@ -32,12 +32,12 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
   function addCategory() {
     const name = newCategory.trim();
     if (!name) return;
-    const current = getCategories(budget);
-    if (current.includes(name)) return;
-    setBudget((prev) => ({ ...prev, [name]: 0 }));
+    setBudget((prev) => {
+      if (getCategories(prev).includes(name)) return prev;
+      return { ...prev, [name]: 0 };
+    });
     setNewCategory('');
     setSaved(false);
-    setTimeout(() => newCatRef.current?.focus(), 0);
   }
 
   function removeCategory(cat) {
