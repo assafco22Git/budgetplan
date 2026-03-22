@@ -38,6 +38,7 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     });
     setNewCategory('');
     setSaved(false);
+    newCatRef.current?.focus();
   }
 
   function removeCategory(cat) {
@@ -50,6 +51,7 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
       setBudget((prev) => { const n = { ...prev }; delete n[cat]; return n; });
     }
     setSaved(false);
+    newCatRef.current?.focus();
   }
 
   function startRename(cat) { setEditingCat(cat); setEditCatVal(cat); }
