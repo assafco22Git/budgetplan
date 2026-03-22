@@ -1,31 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Legacy per-user data (kept for migration reads)
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-
-    // Budgets collection
-    match /budgets/{budgetId} {
-      // Any authenticated user can create a new budget
-      allow create: if request.auth != null;
-
-      // Members can read and update; pending invitees can read (to accept invite)
-      allow read: if request.auth != null && (
-        request.auth.uid in resource.data.memberIds ||
-        request.auth.token.email in resource.data.pendingInviteEmails
-      );
-
-      allow update: if request.auth != null && (
-        request.auth.uid in resource.data.memberIds ||
-        request.auth.token.email in resource.data.pendingInviteEmails
-      );
-
-      // Only the owner can delete
-      allow delete: if request.auth != null &&
-        request.auth.uid == resource.data.ownerId;
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

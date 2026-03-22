@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 import Planning from './pages/Planning';
@@ -108,19 +108,25 @@ export default function App() {
     };
   }, [page, activeBudgetId, user?.uid]);
 
-  // Sliding nav pill
-  useLayoutEffect(() => {
-    const btn = btnRefs.current[page];
-    const nav = navRef.current;
-    if (!btn || !nav) return;
-    const navRect = nav.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    setSliderStyle({
-      left:   btnRect.left - navRect.left,
-      width:  btnRect.width,
-      height: btnRect.height,
-      top:    btnRect.top  - navRect.top,
-    });
+  // Sliding nav pill — use rAF to ensure layout is ready before measuring
+  useEffect(() => {
+    let raf;
+    const measure = () => {
+      const btn = btnRefs.current[page];
+      const nav = navRef.current;
+      if (!btn || !nav) return;
+      const navRect = nav.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      if (btnRect.width === 0) { raf = requestAnimationFrame(measure); return; }
+      setSliderStyle({
+        left:   btnRect.left - navRect.left,
+        width:  btnRect.width,
+        height: btnRect.height,
+        top:    btnRect.top  - navRect.top,
+      });
+    };
+    raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
   }, [page]);
 
   async function handleSignIn() {

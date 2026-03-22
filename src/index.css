@@ -164,7 +164,7 @@ body { margin: 0; }
   z-index: 1;
 }
 .nav-btn:hover { color: var(--accent); }
-.nav-btn--active { color: #fff; }
+.nav-btn--active { color: #fff; background: var(--accent); }
 
 .app-main {
   flex: 1;
