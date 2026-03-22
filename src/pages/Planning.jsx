@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DEFAULT_CATEGORIES } from '../store';
 
 export default function Planning({ budget: initialBudget, onSaveBudget, currency }) {
@@ -12,11 +12,22 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 
-  // Sync if parent reloads budget (e.g. after sign-in)
+  // Editing a category name inline
+  const [editingCat,  setEditingCat]  = useState(null);
+  const [editCatValue, setEditCatValue] = useState('');
+
+  const newCatInputRef = useRef(null);
+
+  // Only sync when initialBudget changes identity due to a Firestore reload
+  // (not on every parent re-render — that's what caused the second-add bug)
+  const prevInitialRef = useRef(initialBudget);
   useEffect(() => {
-    setBudget(initialBudget);
-    if (initialBudget._month) setMonth(initialBudget._month);
-  }, [initialBudget]);
+    if (prevInitialRef.current !== initialBudget) {
+      prevInitialRef.current = initialBudget;
+      setBudget(initialBudget);
+      if (initialBudget._month) setMonth(initialBudget._month);
+    }
+  });
 
   const removed = budget._removedCategories || [];
 
@@ -38,6 +49,8 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     setBudget((prev) => ({ ...prev, [trimmed]: '' }));
     setNewCategory('');
     setSaved(false);
+    // Keep focus in the input so the user can type the next category immediately
+    setTimeout(() => newCatInputRef.current?.focus(), 0);
   }
 
   function handleRemoveCategory(cat) {
@@ -54,6 +67,31 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
         return next;
       });
     }
+  }
+
+  function startEditCat(cat) {
+    setEditingCat(cat);
+    setEditCatValue(cat);
+  }
+
+  function confirmEditCat(oldName) {
+    const newName = editCatValue.trim();
+    setEditingCat(null);
+    if (!newName || newName === oldName) return;
+    if (categories.some((c) => c !== oldName && c === newName)) return; // duplicate
+
+    const currentValue = budget[oldName] ?? '';
+    setBudget((prev) => {
+      const next = { ...prev };
+      if (DEFAULT_CATEGORIES.includes(oldName)) {
+        next._removedCategories = [...(prev._removedCategories || []), oldName];
+      } else {
+        delete next[oldName];
+      }
+      next[newName] = currentValue;
+      return next;
+    });
+    setSaved(false);
   }
 
   async function handleSave() {
@@ -86,7 +124,30 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
       <div className="category-list">
         {categories.map((cat) => (
           <div key={cat} className="category-row">
-            <span className="category-name">{cat}</span>
+            {editingCat === cat ? (
+              <input
+                className="cat-edit-input"
+                value={editCatValue}
+                autoFocus
+                onChange={(e) => setEditCatValue(e.target.value)}
+                onBlur={() => confirmEditCat(cat)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter')  confirmEditCat(cat);
+                  if (e.key === 'Escape') setEditingCat(null);
+                }}
+              />
+            ) : (
+              <span className="category-name">{cat}</span>
+            )}
+
+            <button
+              className="edit-cat-btn"
+              onClick={() => startEditCat(cat)}
+              title="Edit name"
+            >
+              ✎
+            </button>
+
             <div className="category-input-wrap">
               <span className="currency-symbol">{currency.symbol}</span>
               <input
@@ -112,6 +173,7 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
 
       <div className="add-category">
         <input
+          ref={newCatInputRef}
           type="text"
           placeholder="New category name..."
           value={newCategory}
@@ -120,7 +182,7 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
           className="new-cat-input"
         />
         <button className="btn btn--secondary" onClick={handleAddCategory}>
-          + Add Category
+          + Add
         </button>
       </div>
 
