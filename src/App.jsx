@@ -59,13 +59,17 @@ export default function App() {
       setUser(firebaseUser);
       if (firebaseUser) {
         setDataLoading(true);
-        const loaded = await loadUserBudgets(
-          firebaseUser.uid,
-          firebaseUser.email,
-          firebaseUser.displayName || firebaseUser.email,
-        );
-        setBudgets(loaded);
-        setActiveBudgetId(loaded[0]?.id || null);
+        try {
+          const loaded = await loadUserBudgets(
+            firebaseUser.uid,
+            firebaseUser.email,
+            firebaseUser.displayName || firebaseUser.email,
+          );
+          setBudgets(loaded);
+          setActiveBudgetId(loaded[0]?.id || null);
+        } catch (err) {
+          console.error('Failed to load budgets:', err);
+        }
         setDataLoading(false);
       } else {
         setBudgets([]);
