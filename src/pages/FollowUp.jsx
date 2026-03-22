@@ -6,7 +6,7 @@ function getWeekLabel(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function FollowUp({ budget, expenses, onSaveExpenses, currency }) {
+export default function FollowUp({ budget, expenses, onSaveExpenses, currency, isLocked, lockedBy }) {
   const [weekDate, setWeekDate] = useState(() => {
     const now = new Date();
     const sunday = new Date(now);
@@ -88,6 +88,12 @@ export default function FollowUp({ budget, expenses, onSaveExpenses, currency })
         <p className="page-subtitle">Enter what you spent during the past week.</p>
       </div>
 
+      {isLocked && (
+        <div className="lock-banner">
+          🔒 {lockedBy} is currently editing — your changes can't be saved.
+        </div>
+      )}
+
       <div className="followup-form card">
         <div className="form-week">
           <label htmlFor="week-input">Week ending (Sunday)</label>
@@ -128,7 +134,7 @@ export default function FollowUp({ budget, expenses, onSaveExpenses, currency })
             </span>
           </div>
           <div className="btn-row">
-            <button className="btn btn--primary" onClick={handleSubmit} disabled={saving}>
+            <button className="btn btn--primary" onClick={handleSubmit} disabled={saving || isLocked}>
               {saving ? 'Saving…' : editingId ? 'Update Entry' : 'Save Entry'}
             </button>
             {editingId && (

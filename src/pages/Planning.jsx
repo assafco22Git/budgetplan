@@ -14,8 +14,7 @@ function getCategories(budget) {
   ]));
 }
 
-export default function Planning({ budget: initialBudget, onSaveBudget, currency }) {
-  // Local editable copy — no useEffect sync, initialised once on mount
+export default function Planning({ budget: initialBudget, onSaveBudget, currency, isLocked, lockedBy }) {
   const [budget,      setBudget]      = useState(() => ({ ...initialBudget }));
   const [newCategory, setNewCategory] = useState('');
   const [saving,      setSaving]      = useState(false);
@@ -26,18 +25,15 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
   const newCatRef = useRef(null);
   const categories = getCategories(budget);
 
-  // ── Amount ────────────────────────────────────────────────────────────────
   function setAmount(cat, value) {
     const num = Math.max(0, Number(value) || 0);
     setBudget((prev) => ({ ...prev, [cat]: num }));
     setSaved(false);
   }
 
-  // ── Add category ──────────────────────────────────────────────────────────
   function addCategory() {
     const name = newCategory.trim();
     if (!name) return;
-    // re-derive freshly to avoid stale closure
     const current = getCategories(budget);
     if (current.includes(name)) return;
     setBudget((prev) => ({ ...prev, [name]: 0 }));
@@ -46,7 +42,6 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     setTimeout(() => newCatRef.current?.focus(), 0);
   }
 
-  // ── Remove category ───────────────────────────────────────────────────────
   function removeCategory(cat) {
     if (DEFAULT_CATEGORIES.includes(cat)) {
       setBudget((prev) => ({
@@ -59,7 +54,6 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     setSaved(false);
   }
 
-  // ── Rename category ───────────────────────────────────────────────────────
   function startRename(cat) { setEditingCat(cat); setEditCatVal(cat); }
 
   function confirmRename(oldName) {
@@ -81,10 +75,8 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     setSaved(false);
   }
 
-  // ── Save ──────────────────────────────────────────────────────────────────
   async function save() {
     setSaving(true);
-    // strip _month — budget is now recurring (no month attached)
     const toSave = { ...budget };
     delete toSave._month;
     await onSaveBudget(toSave);
@@ -101,6 +93,12 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
         <h2>Monthly Budget</h2>
         <p className="page-subtitle">Set once — applied every month automatically.</p>
       </div>
+
+      {isLocked && (
+        <div className="lock-banner">
+          🔒 {lockedBy} is currently editing — your changes can't be saved.
+        </div>
+      )}
 
       <div className="plan-category-list">
         {categories.map((cat) => {
@@ -175,7 +173,7 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
           <span>Total / month</span>
           <span className="total-amount">{sym}{total.toLocaleString()}</span>
         </div>
-        <button className="btn btn--primary" onClick={save} disabled={saving}>
+        <button className="btn btn--primary" onClick={save} disabled={saving || isLocked}>
           {saving ? 'Saving…' : 'Save'}
         </button>
         {saved && <span className="saved-msg">Saved!</span>}
