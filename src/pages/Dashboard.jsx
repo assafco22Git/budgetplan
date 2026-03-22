@@ -30,6 +30,8 @@ export default function Dashboard({
   const [showNewModal,    setShowNewModal]    = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [newBudgetName,   setNewBudgetName]   = useState('');
+  const [createError,     setCreateError]     = useState('');
+  const [creating,        setCreating]        = useState(false);
   const [inviteEmail,     setInviteEmail]     = useState('');
   const [inviteError,     setInviteError]     = useState('');
   const [inviteLoading,   setInviteLoading]   = useState(false);
@@ -75,9 +77,17 @@ export default function Dashboard({
   async function handleCreateBudget() {
     const name = newBudgetName.trim();
     if (!name) return;
-    await onCreateBudget(name);
-    setNewBudgetName('');
-    setShowNewModal(false);
+    setCreating(true);
+    setCreateError('');
+    try {
+      await onCreateBudget(name);
+      setNewBudgetName('');
+      setShowNewModal(false);
+    } catch (err) {
+      console.error('Create budget failed:', err);
+      setCreateError('Failed to create budget. Check your connection and try again.');
+    }
+    setCreating(false);
   }
 
   async function handleSendInvite() {
@@ -271,7 +281,7 @@ export default function Dashboard({
 
       {/* New budget modal */}
       {showNewModal && (
-        <div className="modal-overlay" onClick={() => setShowNewModal(false)}>
+        <div className="modal-overlay" onClick={() => !creating && setShowNewModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-title">Create New Budget</div>
             <input
@@ -280,16 +290,19 @@ export default function Dashboard({
               placeholder="Budget name…"
               value={newBudgetName}
               autoFocus
-              onChange={(e) => setNewBudgetName(e.target.value)}
+              onChange={(e) => { setNewBudgetName(e.target.value); setCreateError(''); }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter')  handleCreateBudget();
                 if (e.key === 'Escape') setShowNewModal(false);
               }}
             />
+            {createError && (
+              <p style={{ fontSize: 14, color: 'var(--danger)' }}>{createError}</p>
+            )}
             <div className="modal-actions">
-              <button className="btn btn--ghost" onClick={() => setShowNewModal(false)}>Cancel</button>
-              <button className="btn btn--primary" onClick={handleCreateBudget} disabled={!newBudgetName.trim()}>
-                Create
+              <button className="btn btn--ghost" onClick={() => setShowNewModal(false)} disabled={creating}>Cancel</button>
+              <button className="btn btn--primary" onClick={handleCreateBudget} disabled={!newBudgetName.trim() || creating}>
+                {creating ? 'Creating…' : 'Create'}
               </button>
             </div>
           </div>
