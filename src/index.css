@@ -447,39 +447,108 @@ body { margin: 0; }
   flex-wrap: wrap;
 }
 
-/* ── History ── */
-.expense-history h3 {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-heading);
-  margin-bottom: 14px;
+/* ── Follow-Up redesign ── */
+.fu-summary {
+  margin-bottom: 20px;
+  padding: 18px 22px;
 }
-.history-list { display: flex; flex-direction: column; gap: 14px; }
-.history-card-header {
+.fu-summary-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-  gap: 5px;
+  margin-bottom: 14px;
+  gap: 10px;
 }
-.history-date { font-weight: 600; font-size: 15px; color: var(--text-heading); }
-.history-total { font-weight: 700; font-size: 17px; color: var(--history-total-color); }
-.history-amounts {
+.fu-summary-stat {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  flex-direction: column;
+  gap: 2px;
+}
+.fu-stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.fu-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+.fu-overall-track {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.fu-overall-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.fu-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.fu-cat-card {
+  padding: 16px 20px;
+}
+.fu-cat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.fu-cat-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-heading);
+}
+.fu-cat-budget {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.fu-cat-track {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
   margin-bottom: 12px;
 }
-.history-chip {
-  background: var(--accent-light);
-  color: var(--chip-color);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
+.fu-cat-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
 }
-.history-actions { display: flex; gap: 10px; }
+.fu-cat-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fu-cat-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fu-cat-input {
+  width: 110px;
+}
+.fu-cat-left {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fu-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-bottom: 32px;
+}
 
 /* ── Home/Dashboard ── */
 .summary-cards {

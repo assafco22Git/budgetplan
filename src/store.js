@@ -58,7 +58,7 @@ export async function createBudget(uid, email, displayName, name) {
     pendingInvites: [],
     editLock: null,
     budgetData: {},
-    expenses: [],
+    expenses: {},
     createdAt: serverTimestamp(),
   });
   return ref.id;

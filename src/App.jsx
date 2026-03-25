@@ -40,7 +40,7 @@ export default function App() {
 
   const activeBudget = budgets.find((b) => b.id === activeBudgetId) || null;
   const budget       = activeBudget?.budgetData || {};
-  const expenses     = activeBudget?.expenses   || [];
+  const expenses     = activeBudget?.expenses   || {};
   const editLock     = activeBudget?.editLock   || null;
 
   const isLockedByOther =
@@ -175,7 +175,7 @@ export default function App() {
       pendingInvites: [],
       editLock: null,
       budgetData: {},
-      expenses: [],
+      expenses: {},
     };
     setBudgets((prev) => [...prev, placeholder]);
     setActiveBudgetId(id);
