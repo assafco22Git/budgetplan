@@ -35,6 +35,9 @@ export default function Dashboard({
   const [inviteEmail,     setInviteEmail]     = useState('');
   const [inviteError,     setInviteError]     = useState('');
   const [inviteLoading,   setInviteLoading]   = useState(false);
+  const [inviteSent,      setInviteSent]      = useState(false);
+  const [inviteMessage,   setInviteMessage]   = useState('');
+  const [copied,          setCopied]          = useState(false);
 
   const removed    = budget._removedCategories || [];
   const categories = Array.from(new Set([
@@ -99,13 +102,10 @@ export default function Dashboard({
       await onInvitePartner(email);
       const budgetName = activeBudget?.name || 'a shared budget';
       const inviterName = user?.displayName || user?.email || 'Someone';
-      const subject = encodeURIComponent(`${inviterName} invited you to "${budgetName}" on BudgetPlan`);
-      const body = encodeURIComponent(
-        `Hi!\n\n${inviterName} has invited you to join "${budgetName}" on BudgetPlan.\n\nSign in at https://budgetplan-mocha.vercel.app/ with this email address to accept the invite.\n\nSee you there!`
-      );
-      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-      setInviteEmail('');
-      setShowInviteModal(false);
+      const msg = `Hi! ${inviterName} invited you to join "${budgetName}" on BudgetPlan.\n\nSign in at https://budgetplan-mocha.vercel.app/ with this email (${email}) to join the budget.`;
+      setInviteMessage(msg);
+      setInviteSent(true);
+      setCopied(false);
     } catch (err) {
       if (err.message === 'already-member') {
         setInviteError('This person is already a member of this budget.');
@@ -116,6 +116,24 @@ export default function Dashboard({
       }
     }
     setInviteLoading(false);
+  }
+
+  function closeInviteModal() {
+    setShowInviteModal(false);
+    setInviteEmail('');
+    setInviteError('');
+    setInviteSent(false);
+    setInviteMessage('');
+    setCopied(false);
+  }
+
+  async function copyInviteMessage() {
+    try {
+      await navigator.clipboard.writeText(inviteMessage);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
@@ -313,37 +331,59 @@ export default function Dashboard({
 
       {/* Invite modal */}
       {showInviteModal && (
-        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+        <div className="modal-overlay" onClick={closeInviteModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-title">Invite Partner</div>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-              Enter their email address. They'll be added when they sign in.
-            </p>
-            <input
-              className="modal-input"
-              type="email"
-              placeholder="partner@email.com"
-              value={inviteEmail}
-              autoFocus
-              onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter')  handleSendInvite();
-                if (e.key === 'Escape') setShowInviteModal(false);
-              }}
-            />
-            {inviteError && (
-              <p style={{ fontSize: 14, color: 'var(--danger)' }}>{inviteError}</p>
+            {!inviteSent ? (
+              <>
+                <div className="modal-title">Invite Partner</div>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                  Enter their email address. They'll be added when they sign in.
+                </p>
+                <input
+                  className="modal-input"
+                  type="email"
+                  placeholder="partner@email.com"
+                  value={inviteEmail}
+                  autoFocus
+                  onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')  handleSendInvite();
+                    if (e.key === 'Escape') closeInviteModal();
+                  }}
+                />
+                {inviteError && (
+                  <p style={{ fontSize: 14, color: 'var(--danger)' }}>{inviteError}</p>
+                )}
+                <div className="modal-actions">
+                  <button className="btn btn--ghost" onClick={closeInviteModal}>Cancel</button>
+                  <button
+                    className="btn btn--primary"
+                    onClick={handleSendInvite}
+                    disabled={!inviteEmail.trim() || inviteLoading}
+                  >
+                    {inviteLoading ? 'Sending…' : 'Send Invite'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="modal-title">Invite Ready</div>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 10 }}>
+                  Copy this message and send it to <strong>{inviteEmail}</strong> via WhatsApp, iMessage, or any app:
+                </p>
+                <textarea
+                  readOnly
+                  value={inviteMessage}
+                  style={{ width: '100%', minHeight: 100, borderRadius: 8, padding: '10px 12px', fontSize: 13, border: '1px solid var(--border)', background: 'var(--surface-2, #f5f5f5)', resize: 'none', color: 'var(--text)' }}
+                />
+                <div className="modal-actions">
+                  <button className="btn btn--ghost" onClick={closeInviteModal}>Close</button>
+                  <button className="btn btn--primary" onClick={copyInviteMessage}>
+                    {copied ? 'Copied!' : 'Copy Message'}
+                  </button>
+                </div>
+              </>
             )}
-            <div className="modal-actions">
-              <button className="btn btn--ghost" onClick={() => setShowInviteModal(false)}>Cancel</button>
-              <button
-                className="btn btn--primary"
-                onClick={handleSendInvite}
-                disabled={!inviteEmail.trim() || inviteLoading}
-              >
-                {inviteLoading ? 'Sending…' : 'Send Invite'}
-              </button>
-            </div>
           </div>
         </div>
       )}
