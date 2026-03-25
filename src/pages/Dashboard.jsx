@@ -1,5 +1,12 @@
 import { useState } from 'react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DEFAULT_CATEGORIES, getTotalSpentByCategory } from '../store';
+
+const CHART_COLORS = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+  '#14b8a6', '#e11d48',
+];
 
 function ProgressBar({ pct, status }) {
   return (
@@ -297,6 +304,51 @@ export default function Dashboard({
             </div>
             <ProgressBar pct={overallPct} status={overallStatus} />
           </div>
+
+          {/* Pie chart */}
+          {rows.filter(r => r.target > 0).length > 0 && (
+            <div className="card pie-chart-card">
+              <h3 className="pie-chart-title">Budget Allocation</h3>
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={rows.filter(r => r.target > 0).map((r, i) => ({
+                      name: r.cat,
+                      value: r.target,
+                      color: CHART_COLORS[i % CHART_COLORS.length],
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={120}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {rows.filter(r => r.target > 0).map((r, i) => (
+                      <Cell key={r.cat} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [`${sym}${value.toLocaleString()}`, 'Budget']}
+                    contentStyle={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      color: 'var(--text)',
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={10}
+                    formatter={(value) => (
+                      <span style={{ fontSize: 13, color: 'var(--text)' }}>{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           <div className="breakdown">
             <h3>Category Breakdown</h3>
