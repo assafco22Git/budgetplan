@@ -329,7 +329,7 @@ export default function Dashboard({
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => [`${sym}${value.toLocaleString()}`, 'Budget']}
+                    formatter={(value, _key, props) => [`${sym}${value.toLocaleString()}`, props.payload.name]}
                     contentStyle={{
                       background: 'var(--surface)',
                       border: '1px solid var(--border)',

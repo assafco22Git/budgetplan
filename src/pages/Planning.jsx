@@ -34,7 +34,12 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     if (!name) return;
     setBudget((prev) => {
       if (getCategories(prev).includes(name)) return prev;
-      return { ...prev, [name]: 0 };
+      // If it's a previously-removed default category, restore it
+      if (DEFAULT_CATEGORIES.includes(name)) {
+        const removed = (prev._removedCategories || []).filter((c) => c !== name);
+        return { ...prev, _removedCategories: removed };
+      }
+      return { ...prev, [name]: prev[name] ?? 0 };
     });
     setNewCategory('');
     setSaved(false);
