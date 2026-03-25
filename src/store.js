@@ -192,9 +192,16 @@ export function subscribeToBudget(ownerUid, budgetId, callback) {
 // ── Pure utility ──────────────────────────────────────────────────────────────
 
 export function getTotalSpentByCategory(expenses) {
+  // New format: { category: amount }
+  if (!Array.isArray(expenses)) {
+    return Object.fromEntries(
+      Object.entries(expenses || {}).map(([k, v]) => [k, Number(v) || 0])
+    );
+  }
+  // Legacy format: array of weekly entries
   const totals = {};
   for (const entry of expenses) {
-    for (const [cat, amount] of Object.entries(entry.amounts)) {
+    for (const [cat, amount] of Object.entries(entry.amounts || {})) {
       totals[cat] = (totals[cat] || 0) + Number(amount);
     }
   }
