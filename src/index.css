@@ -536,6 +536,36 @@ body { margin: 0; }
 }
 .fu-cat-input {
   width: 110px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.fu-cat-input:focus {
+  border-color: var(--accent);
+}
+
+.reorder-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 2px 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+.reorder-btn:hover:not(:disabled) {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 .fu-cat-left {
   font-size: 14px;

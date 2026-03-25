@@ -24,7 +24,7 @@ export default function Dashboard({
   budget, expenses, currency,
   budgets, activeBudgetId, activeBudget, user,
   onSelectBudget, onCreateBudget, onInvitePartner, onCancelInvite,
-  onRemovePartner, onRenameBudget, onDeleteBudget,
+  onRemovePartner, onRenameBudget, onDeleteBudget, onReorderBudget,
   isLocked, lockedBy,
 }) {
   const [showNewModal,    setShowNewModal]    = useState(false);
@@ -145,15 +145,41 @@ export default function Dashboard({
             Budget:
           </label>
           {budgets.length > 0 ? (
-            <select
-              className="budget-name-select"
-              value={activeBudgetId || ''}
-              onChange={(e) => onSelectBudget(e.target.value)}
-            >
-              {budgets.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <>
+              <select
+                className="budget-name-select"
+                value={activeBudgetId || ''}
+                onChange={(e) => onSelectBudget(e.target.value)}
+              >
+                {[...budgets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              {budgets.length > 1 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {(() => {
+                    const sorted = [...budgets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                    const idx = sorted.findIndex((b) => b.id === activeBudgetId);
+                    return (
+                      <>
+                        <button
+                          className="reorder-btn"
+                          onClick={() => onReorderBudget('up')}
+                          disabled={idx <= 0}
+                          title="Move up"
+                        >▲</button>
+                        <button
+                          className="reorder-btn"
+                          onClick={() => onReorderBudget('down')}
+                          disabled={idx >= sorted.length - 1}
+                          title="Move down"
+                        >▼</button>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </>
           ) : (
             <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>(no budget)</span>
           )}

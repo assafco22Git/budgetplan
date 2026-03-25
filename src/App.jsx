@@ -11,6 +11,7 @@ import {
   loadUserBudgets, createBudget, updateBudgetData, updateBudgetExpenses,
   renameBudget, deleteBudget, inviteUserToBudget, cancelInvite,
   removePartnerFromBudget, acquireEditLock, releaseEditLock, subscribeToBudget,
+  updateBudgetOrder,
 } from './store';
 import './App.css';
 
@@ -216,6 +217,26 @@ export default function App() {
     setActiveBudgetId(remaining[0]?.id || null);
   }
 
+  async function handleReorderBudget(direction) {
+    if (!activeBudgetId || !user) return;
+    const sorted = [...budgets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const idx = sorted.findIndex((b) => b.id === activeBudgetId);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    const newSorted = [...sorted];
+    newSorted[idx]    = { ...a, order: b.order ?? swapIdx };
+    newSorted[swapIdx] = { ...b, order: a.order ?? idx };
+
+    setBudgets(newSorted);
+    await Promise.all([
+      updateBudgetOrder(user.uid, a.id, newSorted[idx].order),
+      updateBudgetOrder(user.uid, b.id, newSorted[swapIdx].order),
+    ]);
+  }
+
   function handleCurrencyChange(e) {
     const code = e.target.value;
     saveCurrency(code);
@@ -317,6 +338,7 @@ export default function App() {
             onRemovePartner={handleRemovePartner}
             onRenameBudget={handleRenameBudget}
             onDeleteBudget={handleDeleteBudget}
+            onReorderBudget={handleReorderBudget}
             isLocked={isLockedByOther}
             lockedBy={editLock?.displayName}
           />

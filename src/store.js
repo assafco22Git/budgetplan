@@ -46,9 +46,10 @@ function budgetsCol(ownerUid) {
 
 // ── Budget CRUD ───────────────────────────────────────────────────────────────
 
-export async function createBudget(uid, email, displayName, name) {
+export async function createBudget(uid, email, displayName, name, order = 0) {
   const ref = await addDoc(budgetsCol(uid), {
     name,
+    order,
     ownerId: uid,
     memberIds: [uid],
     members: {
@@ -84,7 +85,23 @@ export async function loadUserBudgets(uid, email, displayName) {
     budgets = freshSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   }
 
-  return budgets;
+  // Assign order to any budget that doesn't have one yet
+  const needsOrder = budgets.filter((b) => b.order == null);
+  if (needsOrder.length > 0) {
+    const sorted = [...budgets].sort((a, b) =>
+      (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0)
+    );
+    await Promise.all(
+      sorted.map((b, i) => b.order == null ? updateDoc(budgetRef(uid, b.id), { order: i }) : Promise.resolve())
+    );
+    budgets = budgets.map((b) => {
+      if (b.order != null) return b;
+      const idx = sorted.findIndex((s) => s.id === b.id);
+      return { ...b, order: idx };
+    });
+  }
+
+  return budgets.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 export async function updateBudgetData(ownerUid, budgetId, budgetData) {
@@ -97,6 +114,10 @@ export async function updateBudgetExpenses(ownerUid, budgetId, expenses) {
 
 export async function renameBudget(ownerUid, budgetId, name) {
   await updateDoc(budgetRef(ownerUid, budgetId), { name });
+}
+
+export async function updateBudgetOrder(ownerUid, budgetId, order) {
+  await updateDoc(budgetRef(ownerUid, budgetId), { order });
 }
 
 export async function deleteBudget(ownerUid, budgetId) {
