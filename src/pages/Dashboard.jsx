@@ -97,6 +97,13 @@ export default function Dashboard({
     setInviteError('');
     try {
       await onInvitePartner(email);
+      const budgetName = activeBudget?.name || 'a shared budget';
+      const inviterName = user?.displayName || user?.email || 'Someone';
+      const subject = encodeURIComponent(`${inviterName} invited you to "${budgetName}" on BudgetPlan`);
+      const body = encodeURIComponent(
+        `Hi!\n\n${inviterName} has invited you to join "${budgetName}" on BudgetPlan.\n\nSign in at https://budgetplan-mocha.vercel.app/ with this email address to accept the invite.\n\nSee you there!`
+      );
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
       setInviteEmail('');
       setShowInviteModal(false);
     } catch (err) {
