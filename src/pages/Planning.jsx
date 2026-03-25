@@ -29,33 +29,39 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     setSaved(false);
   }
 
+  function persistStructural(newBudget) {
+    setBudget(newBudget);
+    const toSave = { ...newBudget };
+    delete toSave._month;
+    onSaveBudget(toSave);
+    setSaved(true);
+  }
+
   function addCategory() {
     const name = newCategory.trim();
     if (!name) return;
-    setBudget((prev) => {
-      if (getCategories(prev).includes(name)) return prev;
-      // If it's a previously-removed default category, restore it
-      if (DEFAULT_CATEGORIES.includes(name)) {
-        const removed = (prev._removedCategories || []).filter((c) => c !== name);
-        return { ...prev, _removedCategories: removed };
-      }
-      return { ...prev, [name]: prev[name] ?? 0 };
-    });
+    if (getCategories(budget).includes(name)) { setNewCategory(''); return; }
+    let next;
+    if (DEFAULT_CATEGORIES.includes(name)) {
+      const removed = (budget._removedCategories || []).filter((c) => c !== name);
+      next = { ...budget, _removedCategories: removed };
+    } else {
+      next = { ...budget, [name]: budget[name] ?? 0 };
+    }
+    persistStructural(next);
     setNewCategory('');
-    setSaved(false);
     newCatRef.current?.focus();
   }
 
   function removeCategory(cat) {
+    let next;
     if (DEFAULT_CATEGORIES.includes(cat)) {
-      setBudget((prev) => ({
-        ...prev,
-        _removedCategories: [...(prev._removedCategories || []), cat],
-      }));
+      next = { ...budget, _removedCategories: [...(budget._removedCategories || []), cat] };
     } else {
-      setBudget((prev) => { const n = { ...prev }; delete n[cat]; return n; });
+      next = { ...budget };
+      delete next[cat];
     }
-    setSaved(false);
+    persistStructural(next);
     newCatRef.current?.focus();
   }
 
@@ -67,17 +73,14 @@ export default function Planning({ budget: initialBudget, onSaveBudget, currency
     if (!newName || newName === oldName) return;
     if (getCategories(budget).some((c) => c !== oldName && c === newName)) return;
     const val = budget[oldName] ?? 0;
-    setBudget((prev) => {
-      const n = { ...prev };
-      if (DEFAULT_CATEGORIES.includes(oldName)) {
-        n._removedCategories = [...(prev._removedCategories || []), oldName];
-      } else {
-        delete n[oldName];
-      }
-      n[newName] = val;
-      return n;
-    });
-    setSaved(false);
+    const next = { ...budget };
+    if (DEFAULT_CATEGORIES.includes(oldName)) {
+      next._removedCategories = [...(budget._removedCategories || []), oldName];
+    } else {
+      delete next[oldName];
+    }
+    next[newName] = val;
+    persistStructural(next);
   }
 
   async function save() {
